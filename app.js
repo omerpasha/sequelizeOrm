@@ -1,15 +1,15 @@
 const express=require('express');
-  const Sequelize=require('sequelize');
-    const Playlist=require('./models/playlist');
-        const Artist=require('./models/artist');
-            const Album=require('./models/album');
-                const Track=require('./models/track');
-                     const {Op}=Sequelize;
-                        // const bodyParser=require('body-parser');
+const Sequelize=require('sequelize');
+const Playlist=require('./models/playlist');
+const Artist=require('./models/artist');
+ const Album=require('./models/album');
+const Track=require('./models/track');
+const {Op}=Sequelize;
+const bodyParser=require('body-parser');
     
-     const app=express();
+const app=express();
 
-    // app.use(bodyParser.json);
+app.use(bodyParser.json());
 
 
             Artist.hasMany(Album,{
@@ -76,12 +76,43 @@ const express=require('express');
         });
 
         app.post('/api/artists',function(request,response){
-          console.log(response.body);
-            // Artist.create({
-            //     name:request.body.name
-            // }).then((artist)=>{
-            //         response.json(artist);
-            // })
+            
+          console.log(request.body);
+              Artist.create({
+                  name:request.body.name
+              }).then((artist)=>{
+                      response.json(artist);
+              },(validation)=>{
+                 
+                     response.status(422).json({
+                         errors:validation.errors.map((error)=>{
+                             return{
+                                 attribure:error.path,
+                                    message:error.message
+                             };
+                         })
+                     });
+              });
+        });
+
+        app.delete('/api/playlists/:id',function(request,response){
+            let{ id }=request.params;
+            Playlist.findByPk(id).then((playlist)=>{
+                if(playlist){
+                        
+            return playlist.setTracks([]).then(()=>{
+                return playlist.destroy().then(()=>{
+                    response.status(204).send();
+                         })
+                          });
+                }else{
+                    return Promise.reject();
+                }
+            }).then(()=>{
+                response.status(204).send();
+            },()=>{
+                    response.status(404).send();
+            });
         });
 
         app.get('/api/tracks/:id',function(request,response){
